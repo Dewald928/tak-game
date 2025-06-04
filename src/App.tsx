@@ -1,55 +1,95 @@
+import { Authenticated, Unauthenticated } from "convex/react";
 import { useState } from "react";
-import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 import { SignInForm } from "./SignInForm";
 import { SignOutButton } from "./SignOutButton";
-import { GameLobby } from "./GameLobby";
-import { GameBoard3D } from "./GameBoard3D";
+import { GameBoard } from "./components/GameBoard";
+import { GameLobby } from "./components/GameLobby";
+import { CreateGameForm } from "./components/CreateGameForm";
 import { Id } from "../convex/_generated/dataModel";
-import { Toaster } from "sonner";
 
-export default function App() {
+type Screen = "lobby" | "create" | "game";
+
+function App() {
+  const [currentScreen, setCurrentScreen] = useState<Screen>("lobby");
   const [currentGameId, setCurrentGameId] = useState<Id<"games"> | null>(null);
-  const [view3D, setView3D] = useState(true);
+
+  const navigateToGame = (gameId: Id<"games">) => {
+    setCurrentGameId(gameId);
+    setCurrentScreen("game");
+  };
+
+  const navigateToLobby = () => {
+    setCurrentGameId(null);
+    setCurrentScreen("lobby");
+  };
+
+  const navigateToCreate = () => {
+    setCurrentScreen("create");
+  };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
-      <Toaster position="top-right" />
-
-      <AuthLoading>
-        <div className="flex justify-center items-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
-        </div>
-      </AuthLoading>
-
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
       <Unauthenticated>
-        <SignInForm />
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold text-gray-800 mb-2">Tak</h1>
+              <p className="text-gray-600">The Beautiful Game</p>
+            </div>
+            <SignInForm />
+          </div>
+        </div>
       </Unauthenticated>
 
       <Authenticated>
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-4xl font-bold text-amber-800">3D Tak Game</h1>
-            <SignOutButton />
-          </div>
-
-          {currentGameId ? (
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setCurrentGameId(null)}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  ← Back to Lobby
-                </button>
+        <div className="min-h-screen">
+          <header className="bg-white shadow-sm border-b">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex justify-between items-center h-16">
+                <div className="flex items-center">
+                  <h1 className="text-2xl font-bold text-gray-900">Tak</h1>
+                  {currentScreen !== "lobby" && (
+                    <button
+                      onClick={navigateToLobby}
+                      className="ml-4 text-blue-600 hover:text-blue-800"
+                    >
+                      ← Back to Lobby
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center space-x-4">
+                  {currentScreen === "lobby" && (
+                    <button
+                      onClick={navigateToCreate}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Create Game
+                    </button>
+                  )}
+                  <SignOutButton />
+                </div>
               </div>
-
-              <GameBoard3D gameId={currentGameId} />
             </div>
-          ) : (
-            <GameLobby onJoinGame={setCurrentGameId} />
-          )}
+          </header>
+
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {currentScreen === "lobby" && (
+              <GameLobby onGameSelect={navigateToGame} />
+            )}
+            {currentScreen === "create" && (
+              <CreateGameForm
+                onGameCreated={navigateToGame}
+                onCancel={navigateToLobby}
+              />
+            )}
+            {currentScreen === "game" && currentGameId && (
+              <GameBoard gameId={currentGameId} onGameEnd={navigateToLobby} />
+            )}
+          </main>
         </div>
       </Authenticated>
-    </main>
+    </div>
   );
 }
+
+export default App;
